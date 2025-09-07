@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>升級版貪吃蛇</title>
+<style>
+  body { background: #fafafa; display: flex; flex-direction: column; align-items: center; font-family: Arial, sans-serif; }
+  h1 { margin: 20px 0; }
+  canvas { background: #ddd; border: 2px solid #333; }
+  #score { font-size: 18px; margin: 10px; }
+  .controls { margin-top: 15px; display: grid; grid-template-columns: 60px 60px 60px; grid-gap: 10px; }
+  .btn { background: #333; color: #fff; font-size: 20px; padding: 10px; text-align: center; border-radius: 8px; user-select: none; }
+  .btn:active { background: #555; }
+  .options { margin: 10px; }
+</style>
+</head>
+<body>
+  <h1>貪吃蛇</h1>
+  <div id="score">分數：0</div>
+  <div class="options">
+    難度：
+    <button onclick="setSpeed(200)">慢速</button>
+    <button onclick="setSpeed(150)">中速</button>
+    <button onclick="setSpeed(100)">快速</button>
+    <button onclick="toggleAI()">AI 自動玩</button>
+  </div>
+  <canvas id="gameCanvas" width="300" height="300"></canvas>
+
+  <div class="controls">
+    <div></div>
+    <div class="btn" onclick="setDirection('UP')">↑</div>
+    <div></div>
+    <div class="btn" onclick="setDirection('LEFT')">←</div>
+    <div></div>
+    <div class="btn" onclick="setDirection('RIGHT')">→</div>
+    <div></div>
+    <div class="btn" onclick="setDirection('DOWN')">↓</div>
+    <div></div>
+  </div>
+
+  <audio id="eatSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+  <audio id="gameOverSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const box = 15;
+let snake = [{x: 5 * box, y: 5 * box}];
+let food = {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
+let score = 0;
+let direction = null;
+let speed = 150;
+let game = null;
+let aiMode = false;
+
+document.addEventListener("keydown", changeDirection);
+
+function changeDirection(e) {
+  if (e.key === "ArrowUp") setDirection("UP");
+  else if (e.key === "ArrowDown") setDirection("DOWN");
+  else if (e.key === "ArrowLeft") setDirection("LEFT");
+  else if (e.key === "ArrowRight") setDirection("RIGHT");
+}
+
+function setDirection(dir) {
+  if (dir === "UP" && direction !== "DOWN") direction = "UP";
+  if (dir === "DOWN" && direction !== "UP") direction = "DOWN";
+  if (dir === "LEFT" && direction !== "RIGHT") direction = "LEFT";
+  if (dir === "RIGHT" && direction !== "LEFT") direction = "RIGHT";
+}
+
+function setSpeed(newSpeed) {
+  speed = newSpeed;
+  clearInterval(game);
+  game = setInterval(draw, speed);
+}
+
+function toggleAI() {
+  aiMode = !aiMode;
+}
+
+function aiControl(headX, headY) {
+  if (!aiMode) return;
+  if (food.x > headX) direction = "RIGHT";
+  else if (food.x < headX) direction = "LEFT";
+  else if (food.y > headY) direction = "DOWN";
+  else if (food.y < headY) direction = "UP";
+}
+
+function draw() {
+  ctx.fillStyle = "#ddd";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "red";
+  ctx.fillRect(food.x, food.y, box, box);
+
+  for (let i = 0; i < snake.length; i++) {
+    ctx.fillStyle = (i === 0) ? "green" : "lime";
+    ctx.fillRect(snake[i].x, snake[i].y, box, box);
+  }
+
+  let headX = snake[0].x;
+  let headY = snake[0].y;
+
+  aiControl(headX, headY);
+
+  if (direction === "UP") headY -= box;
+  if (direction === "DOWN") headY += box;
+  if (direction === "LEFT") headX -= box;
+  if (direction === "RIGHT") headX += box;
+
+  if (headX < 0 || headY < 0 || headX >= canvas.width || headY >= canvas.height ||
+      snake.some((s, i) => i !== 0 && s.x === headX && s.y === headY)) {
+    clearInterval(game);
+    document.getElementById("gameOverSound").play();
+    alert("遊戲結束！你的分數：" + score);
+    return;
+  }
+
+  if (headX === food.x && headY === food.y) {
+    score++;
+    document.getElementById("score").textContent = "分數：" + score;
+    document.getElementById("eatSound").play();
+    food = {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
+  } else {
+    snake.pop();
+  }
+
+  snake.unshift({x: headX, y: headY});
+}
+
+game = setInterval(draw, speed);
+</script>
+</body>
+</html>
